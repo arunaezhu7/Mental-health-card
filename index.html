@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>My Mind Card</title>
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root{--bg1:#e8f1ef;--bg2:#e9e6f4;--ink:#2f4a4f;--soft:#5d7a7c;--sage:#8fb8a8;--mist:#a9c8dc;--lav:#c3b9e3;--sand:#f4e9d8;--card:#ffffffcc;--line:#d3e2de;--btn:#4f8a86;--btnink:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#16262a;--bg2:#1f2036;--ink:#e3efec;--soft:#a5bdbd;--card:#22363bcc;--line:#365055;--btn:#7fc0b6;--btnink:#10282a;--sand:#33352f}}
@@ -58,6 +59,11 @@ main{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:28px 20px
 .item p{margin:2px 0 0;font-family:'Lora',Georgia,serif;font-size:1.05rem;line-height:1.4;overflow-wrap:anywhere;white-space:pre-wrap}
 .card footer{text-align:center;margin-top:16px;font-size:.85rem;color:#5d7a7c}
 .acts{margin-top:6px}
+#ov{display:none;position:fixed;inset:0;z-index:9;background:#10282acc;align-items:center;justify-content:center;flex-direction:column;padding:20px;gap:12px;overflow:auto}
+#ov.on{display:flex}
+#ov img{max-width:100%;max-height:68vh;border-radius:18px;-webkit-touch-callout:default}
+#ov p{color:#fff;text-align:center;margin:0}
+#ov .btn{width:auto;margin:0;padding:12px 26px;text-decoration:none;text-align:center}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-iteration-count:1!important}.item{opacity:1}}
 </style>
 </head>
@@ -99,11 +105,12 @@ main{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:28px 20px
       <footer>Be gentle with yourself today.</footer>
     </div>
     <div class="acts">
-      <button class="btn" id="again">Make a new card</button>
-      <p class="tip" style="text-align:center">To share, take a screenshot of your card.</p>
+      <button class="btn" id="save">Save to my gallery</button>
+      <button class="btn ghost" id="again">Make a new card</button>
     </div>
   </section>
 </main>
+<div id="ov"><img id="ovimg" alt="Your mind card"><p>Press and hold the image to save it, or use the button.</p><a class="btn" id="dl" download="my-mind-card.png">Download image</a><button class="btn ghost" id="cl" style="color:#fff;border-color:#fff">Close</button></div>
 
 <script>
 var ICONS={
@@ -161,6 +168,30 @@ document.getElementById('go').onclick=function(){
   show('s2');
 };
 document.getElementById('again').onclick=function(){document.getElementById('nm').value='';build();show('s1');};
+document.getElementById('cl').onclick=function(){document.getElementById('ov').classList.remove('on');};
+document.getElementById('save').onclick=function(){
+  var b=this,old=b.textContent;b.disabled=true;b.textContent='Preparing your card...';
+  var done=function(){b.disabled=false;b.textContent=old;};
+  if(!window.html2canvas){done();alert('Image tool could not load. Please take a screenshot instead.');return;}
+  html2canvas(document.getElementById('card'),{scale:2,backgroundColor:null,useCORS:true,onclone:function(d){
+    d.querySelectorAll('#card, #card *').forEach(function(e){e.style.animation='none';e.style.transform='none';});
+    d.querySelectorAll('#card .item').forEach(function(e){e.style.opacity='1';});
+    d.querySelectorAll('#card .orb').forEach(function(o){o.style.filter='none';o.style.opacity='.8';o.style.background='radial-gradient(circle,'+(o.classList.contains('o1')?'#a9c8dc':'#c3b9e3')+',transparent 70%)';});
+  }}).then(function(cv){
+    cv.toBlob(function(blob){
+      done();
+      var file=new File([blob],'my-mind-card.png',{type:'image/png'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        navigator.share({files:[file],title:'My mind card'}).catch(function(){});
+      }else{
+        var u=URL.createObjectURL(blob);
+        document.getElementById('ovimg').src=u;
+        document.getElementById('dl').href=u;
+        document.getElementById('ov').classList.add('on');
+      }
+    },'image/png');
+  }).catch(function(){done();alert('Could not create the image. Please take a screenshot instead.');});
+};
 build();
 </script>
 </body>
