@@ -110,7 +110,7 @@ main{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:28px 20px
     </div>
   </section>
 </main>
-<div id="ov"><img id="ovimg" alt="Your mind card"><p>Press and hold the image to save it, or use the button.</p><a class="btn" id="dl" download="my-mind-card.png">Download image</a><button class="btn ghost" id="cl" style="color:#fff;border-color:#fff">Close</button></div>
+<div id="ov"><p><b>Press and hold the card image, then choose "Save image" (Android) or "Add to Photos" (iPhone).</b></p><img id="ovimg" alt="Your mind card"><button class="btn" id="sh">Share / Save</button><a class="btn ghost" id="dl" download="my-mind-card.png" style="color:#fff;border-color:#fff">Download image</a><button class="btn ghost" id="cl" style="color:#fff;border-color:#fff">Close</button></div>
 
 <script>
 var ICONS={
@@ -172,25 +172,29 @@ document.getElementById('cl').onclick=function(){document.getElementById('ov').c
 document.getElementById('save').onclick=function(){
   var b=this,old=b.textContent;b.disabled=true;b.textContent='Preparing your card...';
   var done=function(){b.disabled=false;b.textContent=old;};
-  if(!window.html2canvas){done();alert('Image tool could not load. Please take a screenshot instead.');return;}
-  html2canvas(document.getElementById('card'),{scale:2,backgroundColor:null,useCORS:true,onclone:function(d){
+  var fail=function(){done();alert('Could not create the image. Please take a screenshot of the card instead.');};
+  if(!window.html2canvas){fail();return;}
+  var card=document.getElementById('card');
+  html2canvas(card,{scale:2,backgroundColor:'#eef3f2',useCORS:true,logging:false,onclone:function(d){
     d.querySelectorAll('#card, #card *').forEach(function(e){e.style.animation='none';e.style.transform='none';});
     d.querySelectorAll('#card .item').forEach(function(e){e.style.opacity='1';});
     d.querySelectorAll('#card .orb').forEach(function(o){o.style.filter='none';o.style.opacity='.8';o.style.background='radial-gradient(circle,'+(o.classList.contains('o1')?'#a9c8dc':'#c3b9e3')+',transparent 70%)';});
   }}).then(function(cv){
-    cv.toBlob(function(blob){
-      done();
-      var file=new File([blob],'my-mind-card.png',{type:'image/png'});
-      if(navigator.canShare&&navigator.canShare({files:[file]})){
-        navigator.share({files:[file],title:'My mind card'}).catch(function(){});
-      }else{
-        var u=URL.createObjectURL(blob);
-        document.getElementById('ovimg').src=u;
-        document.getElementById('dl').href=u;
-        document.getElementById('ov').classList.add('on');
-      }
-    },'image/png');
-  }).catch(function(){done();alert('Could not create the image. Please take a screenshot instead.');});
+    var url=cv.toDataURL('image/png');
+    document.getElementById('ovimg').src=url;
+    document.getElementById('dl').href=url;
+    window._cardCanvas=cv;
+    done();
+    document.getElementById('ov').classList.add('on');
+  }).catch(fail);
+};
+document.getElementById('sh').onclick=function(){
+  var cv=window._cardCanvas;if(!cv)return;
+  cv.toBlob(function(blob){
+    var file=new File([blob],'my-mind-card.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file]}).catch(function(){});}
+    else{alert('Press and hold the card image, then choose Save image / Add to Photos.');}
+  },'image/png');
 };
 build();
 </script>
